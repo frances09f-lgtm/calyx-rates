@@ -119,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 34,
                       height: 24,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
                     ),
                   ),
                   const SizedBox(width: 10),

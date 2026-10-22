@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api/calyx_api.dart';
-import '../config.dart';
 import '../models/login_result.dart';
 import 'dashboard_screen.dart';
 
@@ -14,16 +15,25 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _userCtrl = TextEditingController(text: AppConfig.testUserName);
-  final _passCtrl = TextEditingController(text: AppConfig.testPassword);
+  final _userCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   bool _busy = false;
   bool _obscure = true;
+  bool _slowNote = false;
   String? _error;
+  Timer? _slowTimer;
 
   Future<void> _signIn() async {
     setState(() {
       _busy = true;
       _error = null;
+      _slowNote = false;
+    });
+    _slowTimer?.cancel();
+    // The pilot sign-in server regularly needs ~35s; tell the user we are
+    // still waiting instead of showing a silent spinner.
+    _slowTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && _busy) setState(() => _slowNote = true);
     });
     try {
       final LoginResult login = await widget.api.login(
@@ -41,8 +51,22 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       setState(() => _error = 'Network error. Check your connection.');
     } finally {
-      if (mounted) setState(() => _busy = false);
+      _slowTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _slowNote = false;
+        });
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _slowTimer?.cancel();
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -81,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'Email',
+                      hintText: 'name@example.com',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                   ),
@@ -129,6 +154,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
+                  if (_busy && _slowNote) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Still waiting - the sign-in server is slow to respond '
+                      '(it often needs ~30 seconds).',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: scheme.outline),
+                    ),
+                  ],
                 ],
               ),
             ),

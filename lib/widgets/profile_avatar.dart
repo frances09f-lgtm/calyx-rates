@@ -46,7 +46,7 @@ class ProfileAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: Theme.of(context).colorScheme.primary,
       foregroundImage: NetworkImage(url),
-      onForegroundImageError: (_, __) {},
+      onForegroundImageError: (_, _) {},
       child: Text(
         initial,
         style: TextStyle(
