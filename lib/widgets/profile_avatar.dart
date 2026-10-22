@@ -40,12 +40,21 @@ class ProfileAvatar extends StatelessWidget {
       ),
     );
     if (url == null) return fallback;
+    // foregroundImage paints over the letter when it loads; on any load
+    // error it simply doesn't paint, so the capital letter always shows.
     return CircleAvatar(
       radius: radius,
       backgroundColor: Theme.of(context).colorScheme.primary,
-      backgroundImage: NetworkImage(url),
-      onBackgroundImageError: (_, __) {},
-      child: null,
+      foregroundImage: NetworkImage(url),
+      onForegroundImageError: (_, __) {},
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: radius * 0.8,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }

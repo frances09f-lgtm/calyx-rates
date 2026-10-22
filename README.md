@@ -25,10 +25,11 @@ USD and INR rates.
 
 ## Test credentials
 
-`lib/config.dart` contains the HR-provided test account from the task brief
-(`pratikraut.calyx@gmail.com`), prefilled into the login form for easy
-evaluation. It is flagged in the file header; a production build would not
-ship credentials.
+`lib/config.dart` contains the test account **supplied by Calyx HR in the
+task brief itself** (`pratikraut.calyx@gmail.com`). These are the task
+provider's own test credentials, published here intentionally so reviewers
+can run the app immediately; they are prefilled into the login form and
+flagged in the file header. A production build would not ship credentials.
 
 ## Stack
 
