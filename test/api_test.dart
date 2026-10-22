@@ -155,4 +155,49 @@ void main() {
     final r = await api.defaultCountryRates(_login());
     expect(r.countryID, '2');
   });
+
+  test('regression: live dashboardrates response maps verbatim, zeros kept',
+      () async {
+    // Verbatim live response (2026-10-22) for countryID=6, offer_rate_flag 1:
+    // the pilot server has a real rate only for NGN; USD/INR are 0.0000
+    // server-side. The app must display exactly what the API returns.
+    const raw = {
+      'response': true,
+      'responseCode': '00',
+      'data': [
+        {
+          'pty': '6', 'preferred_flag': '0', 'preferred_customer': '0',
+          'pc': '0', 'currencyCode': 'NGN', 'currencyName': 'Nigerian naira',
+          'minAmount': '0', 'maxAmount': '100', 'rate': '11.2300',
+          'imageName': 'NGN.png', 'countryFlag': 'images/flags/ngn.png',
+          'ID': '96439277', 'countryID': '6', 'currencyID': '43',
+        },
+        {
+          'pty': '6', 'preferred_flag': '0', 'preferred_customer': '0',
+          'pc': '0', 'currencyCode': 'USD',
+          'currencyName': 'United States Dollars', 'minAmount': '0',
+          'maxAmount': '100', 'rate': '0.0000', 'imageName': 'USD.png',
+          'countryFlag': 'images/flags/ngn.png', 'ID': '96439278',
+          'countryID': '6', 'currencyID': '7',
+        },
+        {
+          'pty': '6', 'preferred_flag': '0', 'preferred_customer': '0',
+          'pc': '0', 'currencyCode': 'INR', 'currencyName': 'Indian Rupee',
+          'minAmount': '0', 'maxAmount': '100', 'rate': '0.0000',
+          'imageName': 'INR.png', 'countryFlag': 'images/flags/ngn.png',
+          'ID': '96439279', 'countryID': '6', 'currencyID': '23',
+        },
+      ],
+    };
+    final api = CalyxApi(
+      client: MockClient((req) async => http.Response(jsonEncode(raw), 200)),
+    );
+    final r = await api.defaultCountryRates(_login(payoutCountryId: '6'));
+    expect(r.countryID, '6');
+    expect(r.rates.map((e) => e.currencyCode), ['NGN', 'USD', 'INR']);
+    expect(r.rates.map((e) => e.rate), ['11.2300', '0.0000', '0.0000']);
+    expect(r.rates.map((e) => e.minAmount), ['0', '0', '0']);
+    expect(r.rates.map((e) => e.maxAmount), ['100', '100', '100']);
+    expect(r.rates[1].currencyName, 'United States Dollars');
+  });
 }
