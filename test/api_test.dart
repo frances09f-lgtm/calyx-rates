@@ -58,9 +58,82 @@ void main() {
     expect(r.rates.single.currencyCode, 'NGN');
   });
 
-  test('defaultCountryRates falls back to first country with records', () async {
+  test('defaultCountryRates follows the countrylist order, not ID order',
+      () async {
+    // Live behavior verified 2026-10-23: countrylist returns Australia (13)
+    // first and Nigeria (6) second; 13 returns "No Records Found", 6 has
+    // rates, so the app lands on Nigeria by list order - not by ID luck.
     final api = CalyxApi(
       client: MockClient((req) async {
+        if (req.url.path.endsWith('/country/countrylist')) {
+          final body = jsonDecode(req.body) as Map<String, dynamic>;
+          expect(body.keys, unorderedEquals(['clientID', 'branchID']));
+          expect(req.headers.containsKey('Authorization'), isFalse);
+          return http.Response(
+              jsonEncode({
+                'response': true,
+                'data': [
+                  {'countryID': '13', 'countryName': 'Australia'},
+                  {'countryID': '6', 'countryName': 'Nigeria'},
+                ]
+              }),
+              200);
+        }
+        final body = jsonDecode(req.body) as Map<String, dynamic>;
+        if (body['countryID'] == '6') {
+          return http.Response(
+              jsonEncode({
+                'response': true,
+                'data': [
+                  {'currencyCode': 'NGN', 'countryID': '6'}
+                ]
+              }),
+              200);
+        }
+        return http.Response(
+            jsonEncode({'response': false, 'data': 'No Records Found.'}), 200);
+      }),
+    );
+    final r = await api.defaultCountryRates(_login());
+    expect(r.countryID, '6');
+  });
+
+  test('countrylist order wins even when a later ID is lower', () async {
+    final api = CalyxApi(
+      client: MockClient((req) async {
+        if (req.url.path.endsWith('/country/countrylist')) {
+          return http.Response(
+              jsonEncode({
+                'response': true,
+                'data': [
+                  {'countryID': '9'},
+                  {'countryID': '3'},
+                ]
+              }),
+              200);
+        }
+        final body = jsonDecode(req.body) as Map<String, dynamic>;
+        return http.Response(
+            jsonEncode({
+              'response': true,
+              'data': [
+                {'currencyCode': 'X', 'countryID': body['countryID']}
+              ]
+            }),
+            200);
+      }),
+    );
+    final r = await api.defaultCountryRates(_login());
+    expect(r.countryID, '9');
+  });
+
+  test('falls back to candidate IDs when the countrylist call fails',
+      () async {
+    final api = CalyxApi(
+      client: MockClient((req) async {
+        if (req.url.path.endsWith('/country/countrylist')) {
+          return http.Response('server error', 500);
+        }
         final body = jsonDecode(req.body) as Map<String, dynamic>;
         if (body['countryID'] == '6') {
           return http.Response(
@@ -131,10 +204,23 @@ void main() {
     expect(login.initial, '?');
   });
 
-  test('fallback scan skips a failing country and keeps ascending order',
+  test('fallback probe skips a failing country and keeps list order',
       () async {
     final api = CalyxApi(
       client: MockClient((req) async {
+        if (req.url.path.endsWith('/country/countrylist')) {
+          return http.Response(
+              jsonEncode({
+                'response': true,
+                'data': [
+                  {'countryID': '1'},
+                  {'countryID': '2'},
+                  {'countryID': '3'},
+                  {'countryID': '6'},
+                ]
+              }),
+              200);
+        }
         final body = jsonDecode(req.body) as Map<String, dynamic>;
         final id = body['countryID'];
         if (id == '3') return http.Response('server error', 500);

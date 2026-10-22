@@ -112,27 +112,58 @@ class CalyxApi {
     }
   }
 
+  /// POST /country/countrylist with only clientID + branchID (no token).
+  /// Returns the API's own ordered country IDs (71 entries for this tenant:
+  /// Australia first, Nigeria second).
+  Future<List<String>> _countryIds() async {
+    final res = await _client
+        .post(
+          Uri.parse('${AppConfig.apiBase}/country/countrylist'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'clientID': AppConfig.clientID,
+            'branchID': AppConfig.branchID,
+          }),
+        )
+        .timeout(ratesTimeout);
+    if (res.statusCode != 200) {
+      throw ApiException('Country list failed (HTTP ${res.statusCode}).');
+    }
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    if (json['response'] != true || json['data'] is! List) {
+      throw const ApiException('Country list unavailable.');
+    }
+    return (json['data'] as List)
+        .map((e) => (e as Map<String, dynamic>)['countryID']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList();
+  }
+
   /// Default-country rates for the dashboard: the login response's
   /// payoutCountryId, or the first country with records when that is empty.
   ///
-  /// The API exposes no country-list endpoint (the task brief defines only
-  /// checklogin and dashboardrates; list-style routes probed 2026-10-22 all
-  /// resolve to catch-all parameter routes). "First country" is therefore
-  /// the lowest candidate ID that actually returns rate records. Candidates
-  /// are probed in parallel batches to keep the fallback fast (~2s instead
-  /// of ~6s sequential) while preserving ascending-ID order.
+  /// "First country" follows the API's own ordering from
+  /// POST /country/countrylist: entries are probed in list order (parallel
+  /// batches of 5 to stay fast) and the first one that returns rate records
+  /// wins. For the provided test account that is Nigeria (the list's second
+  /// entry; the first, Australia, returns no records). If the country-list
+  /// call itself fails, the configured candidate IDs are used as a backup.
   Future<CountryRates> defaultCountryRates(LoginResult login) async {
     if (login.payoutCountryId.isNotEmpty) {
       final r = await _ratesForCountry(login, login.payoutCountryId);
       if (r != null) return r;
     }
+    List<String> ids;
+    try {
+      ids = await _countryIds();
+    } catch (_) {
+      ids = AppConfig.fallbackCountryScanIds.map((e) => e.toString()).toList();
+    }
     const batchSize = 5;
-    final ids = AppConfig.fallbackCountryScanIds;
     for (var i = 0; i < ids.length; i += batchSize) {
-      final end =
-          i + batchSize > ids.length ? ids.length : i + batchSize;
+      final end = i + batchSize > ids.length ? ids.length : i + batchSize;
       final results = await Future.wait(
-        ids.sublist(i, end).map((id) => _tryCountry(login, id.toString())),
+        ids.sublist(i, end).map((id) => _tryCountry(login, id)),
       );
       for (final r in results) {
         if (r != null) return r;

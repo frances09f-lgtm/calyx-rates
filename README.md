@@ -12,21 +12,22 @@ Flutter task submission for Calyx Solutions (24-hour exercise).
 3. **Default country rates** on the dashboard from
    `POST /pilot/api/rate/dashboardrates` (JWT bearer token from login):
    - uses the login response's `payoutCountryId` when it is set;
-   - when `payoutCountryId` is empty, shows the first country's rates.
+   - when `payoutCountryId` is empty, shows the first country's rates in
+     the order of `POST /pilot/api/country/countrylist`.
 
 ## Notes on the "first country" fallback
 
-This API exposes no country-list endpoint, and `dashboardrates` rejects an
-empty `countryID`. The API exposes no country-list endpoint (the task brief
-defines only `checklogin` and `dashboardrates`; list-style routes probed on
-2026-10-22 all resolve to catch-all parameter routes, e.g. `rate/{id}`), so
-the app scans a configured list of candidate country IDs
-(`AppConfig.fallbackCountryScanIds`) and uses the lowest one that actually
-returns records. Candidates are probed in parallel batches of 5 so the
-fallback adds ~2s instead of ~6s, while the result stays the first available
-country in ascending-ID order. For the provided test account
-(`payoutCountryId` empty) this is country **6 (Nigeria)**, which returns NGN,
-USD and INR rates.
+`dashboardrates` rejects an empty `countryID`, so the fallback needs the
+API's country ordering. That comes from `POST /pilot/api/country/countrylist`
+(only `clientID` + `branchID`, no token), which returns the tenant's
+countries in the API's own order. The app walks that list in order
+(parallel batches of 5 to stay fast) and uses the first country that
+returns rate records. For the provided test account (`payoutCountryId`
+empty) the list's first entry, **Australia (countryID 13)**, returns "No
+Records Found", so the app shows the second, **Nigeria (countryID 6)**,
+with its NGN, USD and INR rates - by the API's ordering, not by scanning
+guessed IDs. If the country-list call itself fails, a small configured
+candidate list (`AppConfig.fallbackCountryScanIds`) is used as a backup.
 
 ## Assumptions (not explicitly defined in the task)
 
