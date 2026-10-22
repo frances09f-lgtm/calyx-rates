@@ -28,6 +28,20 @@ country in ascending-ID order. For the provided test account
 (`payoutCountryId` empty) this is country **6 (Nigeria)**, which returns NGN,
 USD and INR rates.
 
+## Assumptions (not explicitly defined in the task)
+
+- **Empty `payoutCountryId`:** the app shows rates for the first available
+  country. The API exposes no country-list endpoint (list-style routes
+  resolve to catch-all parameter routes), so the app probes candidate
+  country IDs in ascending order (parallel batches of 5) and uses the
+  lowest one that returns rate records. For the provided test account this
+  is Nigeria (countryID 6, NGN/USD/INR rates).
+- **Selected country returns no data:** if `payoutCountryId` is set but its
+  rate request returns no records, the app applies the same
+  first-available-country fallback. If no country returns records at all,
+  the dashboard shows a clear "no rates available" state with a retry
+  button instead of failing silently.
+
 ## Test credentials
 
 No credentials are stored in the app. The login form starts empty; sign in
