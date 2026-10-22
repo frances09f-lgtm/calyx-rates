@@ -20,7 +20,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
-      - run: flutter build apk --release --target-platform android-arm64 -v --build-number=2 --build-name=1.0.1
+      - run: flutter build apk --release --target-platform android-arm64
       - run: mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/CalyxRates.apk"
       - uses: actions/upload-artifact@v4
         with:
