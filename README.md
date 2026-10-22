@@ -56,6 +56,13 @@ Flutter 3.47.6 (stable), Material 3, `http` only. Structure:
 `lib/config.dart`. Unit tests in `test/api_test.dart` cover the login field
 mapping, the avatar-initial rule and both rate-country branches.
 
+## Changes in v1.0.3
+
+- Dashboard heading is now "Exchange Rates", with a short subtitle when the
+  first-available-country fallback is in use.
+- Rate tiles: long currency names (e.g. "United States Dollars") wrap
+  cleanly within the tile; API values unchanged.
+
 ## Changes in v1.0.2
 
 - Removed the stored/prefilled test credentials (submission checklist:

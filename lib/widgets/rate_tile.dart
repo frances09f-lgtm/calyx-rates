@@ -38,18 +38,24 @@ class RateTile extends StatelessWidget {
                   Text(rate.currencyCode,
                       style: const TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 16)),
-                  Text(rate.currencyName,
-                      style: TextStyle(color: scheme.outline, fontSize: 13)),
+                  Text(
+                    rate.currencyName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: scheme.outline, fontSize: 13, height: 1.2),
+                  ),
                 ],
               ),
             ),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   '1 $fromCurrencyCode = ${rate.rate} ${rate.currencyCode}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15),
+                      fontWeight: FontWeight.w700, fontSize: 14),
                 ),
                 Text(
                   'Limits: ${rate.minAmount} - ${rate.maxAmount}',

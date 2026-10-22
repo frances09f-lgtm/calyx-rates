@@ -124,13 +124,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(width: 10),
                 ],
-                Expanded(
+                const Expanded(
                   child: Text(
-                    _usedFallback
-                        ? 'Rates for the first available country'
-                        : 'Rates for your default country',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w700),
+                    'Exchange Rates',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -138,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (_usedFallback) ...[
               const SizedBox(height: 4),
               Text(
-                'No default country on your profile, showing the first country with rates.',
+                'No default country on your profile - showing rates for the first available country.',
                 style: TextStyle(color: scheme.outline, fontSize: 12),
               ),
             ],
